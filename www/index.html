@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<!--
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+# 
+# http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+#  KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+-->
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name = "format-detection" content = "telephone=no"/>
+        <meta content='width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;' name='viewport' />
+        <!--link rel="stylesheet" type="text/css" href="css/index.css" /-->
+        <!--[if !IE]>-->
+          <link type="text/css" rel="stylesheet" media="only screen and (max-device-width: 480px)" href="css/iphone.css" />
+          <link type="text/css" rel="stylesheet" media="only screen and (min-device-width: 768px) and (max-device-width: 1024px)" href="css/ipad.css" />
+        <!--<![endif]-->
+        <!--link rel="stylesheet" type="text/css" href="css/iphone.css" /-->
+        <!--link rel="stylesheet" media="only screen and (-webkit-max-device-width: 480px)" href="css/iphone.css" /-->
+        <!--link rel="stylesheet" media="only screen and (-webkit-min-device-pixel-ratio: 2)" type="text/css" href="css/iphone.css" />
+        <link rel="stylesheet" media="only screen and (max-device-width: 1024px)" href="css/ipad.css" type="text/css" /-->
+        <link rel="stylesheet" href="css/jquery.mobile.actionsheet.css" />
+        <title>Licked by an Angel</title>
+
+        <script type="text/javascript" src="cordova-2.2.0rc1.js"></script>
+        <script type="text/javascript" src="js/fabric.js"></script>
+        <script type="text/javascript" src="js/jquery-1.7.1.min.js"></script>
+        <script type="text/javascript" src="js/EmailComposer.js"></script>
+        <script type="text/javascript" src="js/SaveImage.js"></script>
+        <script type="text/javascript" src="js/ActionSheet.js"></script>
+        <script type="text/javascript" src="js/Prompt.js"></script>
+        <script type="text/javascript" src="js/TwitterPlugin.js"></script>
+        <script type="text/javascript" src="js/index.js"></script>
+        <script type="text/javascript">
+          app.initialize();
+        </script>
+    </head>
+    <body ontouchmove="app.touchMove(event);">
+        <div class="app">
+          <div id="landing">
+            <div id="annabelle"></div>
+            <div id="cloud_bg"></div>
+            <div id="logo"><img src="img/licked_logo_300.png" /></div>
+            <div id="options">
+                <div class="" id="new" onclick="javascript:app.capturePhoto();">
+                  <img src="img/camera.gray.icon.png" /></br>
+                  New Photo
+                </div>
+                <div class="" id="existing" onclick="javascript:app.getPhoto();">
+                  <img src="img/photo.gray.icon.png" /></br>
+                  Existing
+                </div>
+                <div class="" id="help" onclick="javascript:app.showInfo();">
+                  <img src="img/info.icon.gray.png" /></br>
+                  How to use
+                </div>
+            </div>
+          </div>
+          <div id="photo_page" class="hide">
+            <canvas id="photo" width=320 height=480 style=""></canvas>
+            <div id="footer">
+              <a href="#" id="trash" class="ico" onClick="javascript:app.cancel()"><img src='img/trash.icon.png'/></a>
+              <a href="#" id="" class="ico" onclick="javascript:app.share();"><img src='img/share.icon.png'/></a>
+              <a href="#" id="add" class="ico" onclick="javascript:app.addHalo();"><img src='img/add_halo.png'/></a>
+              <a href="#" id="remove" class="ico" onClick="javascript:app.removeHalo();"><img src='img/remove_halo.png'/></a>
+              <a href="#" id="cam" class="ico" onclick="javascript:app.capturePhotoOptions();" ><img src='img/camera.icon.png'/></a>
+              <a href="#" id="photo" class="ico" onclick="javascript:app.savedPhotoOptions();"><img src='img/photo.icon.png'/></a>
+              <a href="#" id="photo" class="ico" onclick="javascript:app.showInfo();"><img src='img/info.icon.png'/></a>
+            </div>
+          </div>
+          <div id="info_page" class="hide" onclick="javascript:app.hide('info_page')">
+            <!--img src="./img/info_page_new2.png" width=320 onclick="javascript:app.hide('info_page')" /-->
+          </div>
+          <div id="loading_page" class="hide">
+            <img src="./img/loading.gif" />
+          </div>
+        </div>
+    </body>
+</html>

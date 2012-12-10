@@ -1,0 +1,377 @@
+var app = {
+    initialize: function() {
+        this.bind();
+    },
+    bind: function() {
+        document.addEventListener('deviceready', this.deviceready, false);
+    },
+    deviceready: function() {
+        //window.onorientationchange = function() { app.doOnOrientationChange(); };
+        // note that this is an event handler so the scope is that of the event
+        // so we need to call app.report(), and not this.report()
+        //app.report('deviceready');
+        app.pictureSource = navigator.camera.PictureSourceType;
+        app.destinationType = navigator.camera.DestinationType;
+
+        app.canvas = new fabric.Canvas('photo');
+        app.canvas.CANVAS_HEIGHT = 480;
+        app.canvas.CANVAS_WIDTH = 320;
+        app.bgImg = null;
+        app.oImg = null;
+
+        app.halo = 'img/halo_blur3.png';
+
+        /*window.halo = fabric.Image.fromURL('img/halo_blur3.png', function(img) {
+          app.oImg = img.set({ left: 165, top: 85, angle: 5, active:true, cornersize: 20, padding:10});
+          app.oImg.hasBorders = false;
+          app.canvas.add(app.oImg);
+        });*/
+
+    },
+    report: function(id) { 
+      console.log("report:" + id );
+    },
+    touchMove: function(event) {
+      // Prevent scrolling on this element
+      event.preventDefault();
+    },
+    show: function(id){
+      var showElem = document.querySelector('#' + id );
+      showElem.className = showElem.className.split('hide').join('');
+    },
+    hide: function(id){
+      document.querySelector('#' + id ).className += ' hide';
+    },
+    capturePhoto: function(){
+      navigator.camera.getPicture( app.onSuccess, app.onFail, {
+        quality: 10,
+        targetWidth: 320, 
+        targetHeight: 480,
+        //allowEdit: true,
+        saveToPhotoAlbum: true,
+        correctOrientation: true,
+        encodingType: Camera.EncodingType.PNG,
+        destinationType: app.destinationType.FILE_URI
+      });
+    },
+    getPhoto: function(){
+      navigator.camera.getPicture( app.onSuccess, app.onFail, { 
+        quality: 10,
+        targetWidth: 320, 
+        targetHeight: 480,
+        correctOrientation: true,
+        encodingType: Camera.EncodingType.PNG,
+        destinationType: app.destinationType.FILE_URI,
+        sourceType: app.pictureSource.PHOTOLIBRARY
+      });
+    },
+    onSuccess: function( imageData ) {
+      if (imageData){
+        app.imageData = imageData;
+        //app.createFileEntry( imageData );
+        app.hide('landing');
+        app.hide('info_page');
+        app.show('photo_page');
+        app.canvas.clear();
+        window.halo = fabric.Image.fromURL(app.halo, function(img) {
+          app.oImg = img.set({ left: 165, top: 85, angle: 5, active:true, cornersize: 20})
+          app.canvas.add(app.oImg);
+        });
+        app.bg = fabric.Image.fromURL(imageData, function(img) {
+          console.log(img)
+          if (img.width > 320){
+            img.scaleToWidth(320);
+          }
+          //img.scaleToHeight(480);
+          
+          app.bgImg = img.set({ left:160, top: 220, active:false, selectable:false});
+          //app.bgImg = img.set({ scaleY: .5);
+          //app.bgImg = img.set({ width: 320, height: 480, left:160, top: 260, active:false, selectable:false});
+          //app.bgImg = img.set({ left: 160, top: 215, active:false, selectable:false});
+          //app.bgImg.scaleToHeight(320);
+          //app.bgImg.scaleToWidth(320);
+          app.canvas.insertAt(app.bgImg, 0);
+        });
+      } else {
+        $('#trash').trigger('click');
+      }
+    },
+    onFail: function(message) {
+      console.log('FAIL')
+      app.show('landing');
+      app.hide('photo_page');
+      app.hide('info_page');
+      app.canvas.clear();
+    },
+    createFileEntry: function(imageURI){
+      window.resolveLocalFileSystemURI(imageURI, app.copyPhoto, app.onFail);
+    },
+    copyPhoto: function(fileEntry){
+      window.requestFileSystem(LocalFileSystem.PERSISTENT, 0, function(fileSys) { 
+        fileSys.root.getDirectory("photos", {create: true, exclusive: false}, function(dir) { 
+            fileEntry.copyTo(dir, "file45321.png", app.onCopySuccess, app.onFail); 
+        }, app.onFail); 
+      }, app.onFail); 
+    },
+    onCopySuccess: function(entry){
+      console.log('COPY SUCCESS')
+      console.log(entry.fullPath);
+    },
+    addHalo: function(){
+      app.canvas.deactivateAll()
+      fabric.Image.fromURL(app.halo, function(img) {
+        app.oImg = img.set({ left: 160, top: 125, angle: 5, active:true, cornersize: 20, padding:10  })
+        app.canvas.add(app.oImg);
+      });
+      $('#image_bar').show();
+      return true;
+    },
+    removeHalo: function(){
+      app.canvas.remove( app.canvas.getActiveObject() );
+      if (!app.canvas.getActiveObject()) $('image_bar').hide();
+      return true;
+    }, 
+    capturePhotoOptions: function(){
+      var as = new ActionSheet();
+       as.create(null, ['New photo', 'Save photo', 'Cancel'], function(buttonValue, buttonIndex) {
+        switch (arguments[1]) {
+          case 0:
+              app.capturePhoto();
+            break;
+          case 1:
+              app.savePhoto(false);
+              app.capturePhoto();
+            break;
+          
+        }
+      }, {destructiveButtonIndex:0, cancelButtonIndex: 1});
+    },
+    savedPhotoOptions: function(){
+      var as = new ActionSheet();
+      as.create(null, ['Load photo', 'Save photo', 'Cancel'], function( buttonValue, buttonIndex ) {
+        switch (arguments[1]) {
+          case 0:
+              app.wipe();
+              app.getPhoto();
+            break;
+          case 1:
+              app.savePhoto(false);
+              app.wipe();
+              app.getPhoto();
+            break;
+
+        }
+      }, {destructiveButtonIndex:0, cancelButtonIndex: 1});
+    },
+    share: function(){
+      var as = new ActionSheet();
+      
+      as.create(null, ['Send email', 'Facebook', 'Save image', 'Cancel'], function(buttonValue, buttonIndex) {
+        switch (arguments[1]) {
+          case 0:
+            app.canvas.deactivateAll();
+            //var imageToSend = '<html><body>Licked: <img src="'+app.canvas.toDataURL("png")+'"></body></html>';
+            //var imageToSend = '<html><body>Licked: <img src="'+app.canvas.toDataURL("png")+'"></body></html>';
+            var imageToSend = app.imageData;
+            console.log(imageToSend);
+            cordova.exec(
+              null, 
+              null, 
+              "EmailComposer", 
+              "showEmailComposer", 
+              //[{ body: '<img src="'+app.canvas.toDataURL("image/png").replace('data:image/png;base64,', '')+'"/>', bIsHTML: true}]
+              //[{ body: imageToSend, bIsHTML: true, toRecipients: 'christopher.helm@gmail.com', subject: 'licked', imagePath: app.imageData }]
+              [{ body: imageToSend, bIsHTML: true, toRecipients: 'christopher.helm@gmail.com', subject: 'licked', imagePath: '/Users/chelm/Library/Application Support/iPhone Simulator/6.0/Applications/12F25BC0-17E3-4221-9B4D-E6F770AD9FD6/Documents/photos/file2.png'}]
+            );
+            //localStorage.setItem("photo", app.canvas.toDataURL("image/png"));
+            //var photo = localStorage.getItem("photo");
+            /*window.plugins.emailComposer.showEmailComposer('Licked by an Angel',imageToSend,null,null,null,true);*/
+            break;
+          case 1:
+            app.facebookLogin();
+            break;
+          case 2:
+            app.savePhoto(true);
+            break;
+        }
+          //console.warn('create(), arguments=' + Array.prototype.slice.call(arguments).join(', '));
+      }, {cancelButtonIndex: 3});
+    },
+    facebookLogin: function() {
+      if (localStorage.getItem('token')){
+        //cordova.exec("Prompt.show", function(){}, {title : 'Post to Facebook', okButtonTitle : "Post", cancelButtonTitle : "Cancel"});
+      } else {
+        cordovaRef.exec("ChildBrowserCommand.showWebPage", authorize_url);
+      }
+    },
+    promptOkay: function(msg){
+      console.log( 'OKAY', msg );
+      app.canvas.deactivateAll();
+      var data = app.canvas.toDataURL( "png" ).replace('data:image/png;base64,', '');
+      $.ajax({
+        url: 'http://api.imgur.com/2/upload.json',
+        type: 'POST',
+        data: {
+            type: 'base64',
+            key: '724e46addb854981ea5281bb2cb251c9',
+            name: 'licked.png',
+            title: 'Licked By An Angel',
+            caption: 'Supporting animal shelters one halo at a time.',
+            image: data
+        },
+        dataType: 'json'
+      }).success(function(data) {
+        var link = data['upload']['links']['original'];
+        console.log(link);
+        app.fbShare(msg, link);
+      }).error(function(err) {
+        console.log(err);
+      });
+
+     /* window.requestFileSystem( LocalFileSystem.TEMPORARY, 0, 
+        function( fileSys ){
+          console.log(fileSys);
+          fileSys.root.getFile( "cdv_photo_199.png", { create: true }, function(fileEntry){
+            console.log('FILE ENTRY');
+            fileEntry.file(function(file){
+              var reader = new FileReader();
+              reader.onloadend = function(evt) {
+                  console.log("Read as text");
+                  console.log(evt.target.result);
+              };
+              reader.readAsText(file);
+            }, app.saveFail);
+
+            //app.imagePath = fileEntry.fullPath;
+            //console.log(app.imagePath);
+            /*fileEntry.createWriter(function(writer){
+              writer.onwrite = function( evt ) {
+                console.log( "write success") 
+              };
+              writer.write(app.canvas.toDataURL( "png" ).replace('data:image/png;base64,', ''));
+            }, app.saveFail);--/
+          }, app.saveFail );
+        }, app.saveFail );*/
+    },
+    promptFail: function(){
+      //console.log('CANCEL');
+    },
+    saveFail: function(){
+      console.log('SAVING IMAGE FAILED'); 
+    },
+    locationCatch: function(loc){
+      if (loc.indexOf("https://www.facebook.com/connect/login_success.html") >= 0 || loc.indexOf("https://www.facebook.com/connect/login_success.html") > -1) {
+        
+        var fbCode = loc.match(/code=(.*)$/)[1];
+        var url ='https://graph.facebook.com/oauth/access_token?redirect_uri='+encodeURIComponent(my_redirect_uri)+'&client_id='+my_client_id+'&client_secret='+my_secret+'&code='+fbCode; 
+        var req = new XMLHttpRequest();
+        req.open("POST", url, true);
+        req.send({client_id: my_client_id, client_secret: my_secret, code: fbCode, redirect_uri: my_redirect_uri});
+        req.onload = function(d){
+          console.log('Success POST')
+          localStorage.setItem('token', req.responseText.split('=')[1].replace('&expires', ''));
+          cordovaRef.exec("ChildBrowserCommand.close");
+          cordova.exec("Prompt.show", function(){ console.log('POST IT!!!'); }, {title : 'Post to Facebook', okButtonTitle : "Post", cancelButtonTitle : "Cancel"});
+        };
+      }
+    },
+    fbShare: function(msg, link){
+
+    /*  plugins.fileUploader.uploadByUri('https://graph.facebook.com/me/photos', link, {access_token: localStorage.getItem('token').replace(/\&expires/, '')}, 'LickedByAnAngel', 'Licked.png', 'image/png', 
+            function(result) {
+                console.log('Done: ' + $.parseJSON(result));
+                //console.log(url); 
+
+                var url = 'https://graph.facebook.com/me/feed?access_token=';
+                url += localStorage.getItem('token')
+                url += '&message='+escape(msg);
+                url += '&name=Licked+By+An+Angel&description=Support+the+Humane+Society+and+love+your+pets&_link=http://lickedbyanangel.com&caption=Licked+By+An+Angel';
+
+                var req = new XMLHttpRequest();
+                req.open("POST", url, true);
+                req.send(null);
+                req.onload = function(){
+                  console.log('POSTED')
+                  console.log(req);
+                }
+            }, 
+            function(result) {
+                console.log("Error: " + result);
+            }, 
+            function(loaded, total) {
+                var percent = 100 / total * loaded;
+                console.log('Uploaded  ' + percent);
+
+            }
+       );*/
+
+      var url = 'https://graph.facebook.com/me/feed?access_token=';
+        url += localStorage.getItem('token')
+        url += '&picture='+link
+        url += '&message='+escape(msg);
+        url += '&name=Licked+By+An+Angel&description=Support+the+Humane+Society+and+love+your+pets&_link=http://lickedbyanangel.com&caption=Licked+By+An+Angel';
+
+      var req = new XMLHttpRequest();
+      req.open("POST", url, true);
+      req.send(null);
+      req.onload = function(){
+        console.log('POSTED')
+        console.log(req);
+        navigator.notification.alert('Posted to Facebook', null, 'Success');
+      }
+    },
+    savePhoto: function(notify){
+      app.canvas.deactivateAll();
+      cordova.exec("SaveImage.saveImage", app.canvas.toDataURL("image/png").replace('data:image/png;base64,', ''));
+      if (notify){
+        navigator.notification.alert('Saved image to the photo library', null, 'Success');
+      };
+      return true;
+    },
+    sendEmail: function() {
+      var args;
+      args.subject = 'Licked by an Angel'
+      cordova.exec(null, null, "EmailComposer", "showEmailComposer", [args]);
+    },
+    sendMessage: function() {
+      var args;
+      var sms = new SMSComposer();
+      cordova.exec(null,null, 'SMSComposer','showSMSComposer',[{ body: app.imageData }]);
+    },
+    showInfo: function(){
+      app.show('info_page');
+    },
+    wipe: function(){
+      app.hide('info_page');
+      app.canvas.clear();
+    },
+    cancel: function(){
+      //app.show('landing');
+      //app.hide('photo_page');
+      var as = new ActionSheet();
+
+      as.create(null, ['Delete Image', 'Cancel'], function(buttonValue, buttonIndex) {
+        switch (arguments[1]) {
+          case 0:
+              app.show('landing');
+              app.hide('photo_page');
+              app.canvas.clear();
+            break;
+        }
+          //console.warn('create(), arguments=' + Array.prototype.slice.call(arguments).join(', '));
+      }, {destructiveButtonIndex:0, cancelButtonIndex: 1});
+    }
+};
+
+var my_client_id = "420710271316842", // YOUR APP ID
+  my_secret = "0a6d1ea1a922da45cde34278222e15ea", // YOUR APP SECRET 
+  my_redirect_uri = "https://www.facebook.com/connect/login_success.html", // LEAVE THIS
+  my_type ="user_agent", my_display = "touch"; // LEAVE THIS
+
+// Begin Authorization
+var authorize_url = "https://graph.facebook.com/oauth/authorize?";
+  authorize_url += "client_id=" + my_client_id;
+  authorize_url += "&redirect_uri=" + my_redirect_uri;
+  authorize_url += "&display=" + my_display;
+  authorize_url += "&scope=publish_stream,offline_access";
+
